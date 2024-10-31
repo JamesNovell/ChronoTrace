@@ -1,21 +1,30 @@
 import json
 import logging
+import yaml
+import os
 from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
 from datetime import datetime
 
 app = FastAPI()
 
-log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
+main_dir = os.path.join(os.path.dirname(__file__), "..")
+config_path = os.path.join(main_dir, "config", "config.yaml")
+with open(config_path, "r") as file:
+    config = yaml.safe_load(file)
 
-os.makedirs(log_dir, exist_ok=True)
+log_dir = config['logging']['log_dir']
+log_file = os.path.join(main_dir, log_dir, config['logging']['log_file'])
+max_bytes = config['logging']['max_bytes']
+backup_count = config['logging']['backup_count']
+log_level = config['logging']['log_level']
 
-log_file = os.path.join(log_dir, "logs.json")
+os.makedirs(os.path.join(main_dir, log_dir), exist_ok=True)
 
 handler = RotatingFileHandler(
-    log_file, maxBytes=5 * 1024 * 1024, backupCount=15
+    log_file, maxBytes=max_bytes, backupCount=backup_count
 )
-handler.setLevel(logging.INFO)
+handler.setLevel(getattr(logging, log_level.upper()))
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -26,13 +35,12 @@ class JsonFormatter(logging.Formatter):
         }
         return json.dumps(log_record)
         
-handler.setFormatter(JsonFormatter())
-logger = logging.getLogger("uvicorn.access")
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)        
+app_logger = logging.getLogger("app_logger")
+app_logger.setLevel(getattr(logging, log_level.upper()))
+app_logger.addHandler(handler)  
         
 @app.post("/log")
 async def receive_log(request: Request):
     log_data = await request.json()
-    logger.info(json.dumps(log_data))
+    app_logger.info(json.dumps(log_data))
     return {"status": "Log received", "log_data": log_data}

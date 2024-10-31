@@ -1,0 +1,2 @@
+{"timestamp": "2024-10-31T02:08:31.650311", "level": "INFO", "message": "{\"message\": \"Test log entry\", \"log_level\": \"INFO\", \"woowee\": \"test\"}"}
+{"timestamp": "2024-10-31T02:08:31.651462", "level": "INFO", "message": "127.0.0.1:56900 - \"POST /log HTTP/1.1\" 200"}
